@@ -19,11 +19,9 @@ bool tapscreen = false;
 bool passed = false;
 double Score = 0;
 int t1 = 0;
-int t2 = 0;
 int t3 = 0;
 double hlogo = 0;
 int press = 0;
-int bestscore = 0;
 
 SDL_Window* gWindow = NULL;
 SDL_Renderer* gRenderer = NULL;
@@ -97,7 +95,9 @@ LTexture taptap;
 LTexture getReady;
 LTexture flappybird;
 LTexture board;
+LTexture neww;
 LTexture number[9];
+LTexture medal[4];
 
 class Pipe {
     private:
@@ -134,14 +134,14 @@ class Pipe {
 
         void render() {
                 for (int i = 0; i < 3; i++) {
-                    if (ls[i][0] + w <= (SCREEN_WIDTH - 55)/4 && !thua) {
+                    if (ls[i][0] + w <= (SCREEN_WIDTH - 55)/4) {
                         cot.y = ls[(i+1)%3][1] - h;
                         cot.x = ls[(i+1)%3][0];
                         cot2.x = ls[(i+1)%3][0];
                         cot2.y = ls[(i+1)%3][1] + b[(i+1)%3];
                     }
 
-                    if (ls[i][0] + w/2 <= (SCREEN_WIDTH - 55)/4 && !thua) {
+                    if (ls[i][0] + w/2 <= (SCREEN_WIDTH - 55)/4) {
                         score.x = ls[(i+1)%3][0];
                         score.y = ls[(i+1)%3][1];
                         score.h = b[(i+1)%3];
@@ -239,7 +239,7 @@ class Bird
             update();
             if (y + h <= SCREEN_HEIGHT*4/5 + 3) {
                 birdTexture[step/200].render(x, y, w, h);
-                step++;
+                if (!thua) step++;
                 if (step >= 599) step = 0;
             }
             else {
@@ -363,6 +363,12 @@ bool loadMedia()
 		success = false;
 	}
 
+	if( !neww.loadFromFile( "image/new.png" ) )
+	{
+		printf( "Failed to load image!\n" );
+		success = false;
+	}
+
 	if( !uppipe.loadFromFile( "image/uppipe.png" ) )
 	{
 		printf( "Failed to load image!\n" );
@@ -388,6 +394,13 @@ bool loadMedia()
 	}
 	for (int i = 0; i < 10; i++) {
         if( !number[i].loadFromFile( "image/" + std::to_string(i) + ".png" ) )
+        {
+            printf( "Failed to load image!\n" );
+            success = false;
+        }
+	}
+	for (int i = 0; i < 4; i++) {
+        if( !medal[i].loadFromFile( "image/medal" + std::to_string(i) + ".png" ) )
         {
             printf( "Failed to load image!\n" );
             success = false;
@@ -420,12 +433,16 @@ void close()
     gameOver.free();
     taptap.free();
     board.free();
+    neww.free();
     for (int i = 0; i < 10; i++) {
         number[i].free();
     }
     for (int i = 0; i < 2; i++) {
         startbutton[i].free();
         replaybutton[i].free();
+    }
+    for (int i = 0; i < 4; i++) {
+        medal[i].free();
     }
 
     Mix_FreeChunk( wing );
@@ -546,7 +563,7 @@ void GameOver() {
     if (t3 > 2000) {
             gameOver.render( (SCREEN_WIDTH - 500)/2, (SCREEN_HEIGHT*4/5 - 100)/2 - 200, 500, 100 );
             replaybutton[press].render( (SCREEN_WIDTH - 150)/2 , (SCREEN_HEIGHT - 75)/2 + 100 , 150, 75);
-            board.render((SCREEN_WIDTH - 400)/2, (SCREEN_HEIGHT - 200)/2 - 75, 400, 200);
+            board.render((SCREEN_WIDTH - 400)/2, (SCREEN_HEIGHT - 205)/2 - 75, 400, 205);
     }
 }
 
@@ -568,6 +585,8 @@ int main( int argc, char* args[] )
 			bool quit = false;
 
 			SDL_Event e;
+			int k, h = -1;
+			int bestscore = 0;
 
 			while( !quit )
 			{
@@ -580,7 +599,7 @@ int main( int argc, char* args[] )
 
 					Button(e);
 
-                    if (!thua) bird.jump(e);
+                    bird.jump(e);
 
 					tap(e);
 				}
@@ -592,32 +611,39 @@ int main( int argc, char* args[] )
                     if (t1 > 1000) GameStart();
                 }
 
-				if (!thua && start) GamePlay();
-
-				int k;
-                int h = k+1;
-                k = round(Score/100);
-                if (k > bestscore) bestscore = k;
-                if (k == h) Mix_PlayChannel( -1, point, 0 );
-                if (k <= 9 && tapscreen && start ) number[k].render((SCREEN_WIDTH-40)/2, SCREEN_HEIGHT/6, 40, 60);
-                if (k >= 10 && tapscreen && start ) {
-                    number[k/10].render((SCREEN_WIDTH - 40)/2 - 22, SCREEN_HEIGHT/6, 40, 60);
-                    number[k%10].render((SCREEN_WIDTH - 40)/2 + 22, SCREEN_HEIGHT/6, 40, 60);
+				if (!thua && start)
+                {
+                    GamePlay();
+                    k = round(Score/100);
+                    if (k == h) Mix_PlayChannel( -1, point, 0 );
+                    h = k+1;
+                    if (k > bestscore) bestscore = k;
+                    if (k <= 9 && tapscreen) number[k].render((SCREEN_WIDTH-40)/2, SCREEN_HEIGHT/6, 40, 60);
+                    if (k >= 10 && tapscreen) {
+                        number[k/10].render((SCREEN_WIDTH - 40)/2 - 22, SCREEN_HEIGHT/6, 40, 60);
+                        number[k%10].render((SCREEN_WIDTH - 40)/2 + 22, SCREEN_HEIGHT/6, 40, 60);
+                    }
                 }
 
-
-                if (thua) {
-                        GameOver();
-                        if (k <= 9 && tapscreen && start && t3>2000 ) number[k].render(535, 290, 20, 30);
-                        if (k >= 10 && tapscreen && start && t3>2000) {
+                if (thua) GameOver();
+                if (t3 > 2000) {
+                        if (k <= 9) number[k].render(535, 290, 20, 30);
+                        if (k >= 10) {
                             number[k/10].render(510, 290, 20, 30);
                             number[k%10].render(535, 290, 20, 30);
                         }
-                        if (bestscore <= 9 && tapscreen && start && t3>2000 ) number[bestscore].render(535, 360, 20, 30);
-                        if (bestscore >= 10 && tapscreen && start && t3>2000 ) {
+                        if (bestscore <= 9) number[bestscore].render(535, 360, 20, 30);
+                        if (bestscore >= 10) {
                             number[bestscore/10].render(510, 360, 20, 30);
                             number[bestscore%10].render(535, 360, 20, 30);
                         }
+                        if (k == bestscore) {
+                                neww.render(440, 325, 58, 25);
+                        }
+                        if (k >= 10 && k < 20) medal[0].render(246, 295, 77, 77);
+                        else if (k >= 20 && k < 30) medal[1].render(246, 295, 77, 77);
+                        else if (k >= 30 && k < 40) medal[2].render(246, 295, 77, 77);
+                        else if (k >= 40) medal[3].render(246, 295, 77, 77);
                 }
 				SDL_RenderPresent( gRenderer );
 			}
