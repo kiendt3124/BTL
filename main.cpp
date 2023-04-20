@@ -22,6 +22,7 @@ int t1 = 0;
 int t3 = 0;
 double hlogo = 0;
 int press = 0;
+bool news = false;
 
 SDL_Window* gWindow = NULL;
 SDL_Renderer* gRenderer = NULL;
@@ -526,6 +527,7 @@ void Button(SDL_Event e) {
             Score = 0;
             tapscreen = false;
             t3 = 0;
+            news = false;
         }
     }
 }
@@ -617,7 +619,10 @@ int main( int argc, char* args[] )
                     k = round(Score/100);
                     if (k == h) Mix_PlayChannel( -1, point, 0 );
                     h = k+1;
-                    if (k > bestscore) bestscore = k;
+                    if (k > bestscore) {
+                            bestscore = k;
+                            news = true;
+                    }
                     if (k <= 9 && tapscreen) number[k].render((SCREEN_WIDTH-40)/2, SCREEN_HEIGHT/6, 40, 60);
                     if (k >= 10 && tapscreen) {
                         number[k/10].render((SCREEN_WIDTH - 40)/2 - 22, SCREEN_HEIGHT/6, 40, 60);
@@ -637,9 +642,8 @@ int main( int argc, char* args[] )
                             number[bestscore/10].render(510, 360, 20, 30);
                             number[bestscore%10].render(535, 360, 20, 30);
                         }
-                        if (k == bestscore) {
-                                neww.render(440, 325, 58, 25);
-                        }
+                        if (news) neww.render(440, 325, 58, 25);
+
                         if (k >= 10 && k < 20) medal[0].render(246, 295, 77, 77);
                         else if (k >= 20 && k < 30) medal[1].render(246, 295, 77, 77);
                         else if (k >= 30 && k < 40) medal[2].render(246, 295, 77, 77);
